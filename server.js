@@ -10,7 +10,7 @@ const profile = require("./routes/api/profile");
 const passport = require("passport");
 const https = require("https");
 const user = require("./routes/api/user");
-const group = require("./routes/group");
+const group = require("./routes/api/group");
 
 const app = express();
 
