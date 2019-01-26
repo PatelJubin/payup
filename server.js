@@ -19,7 +19,7 @@ app.use(function(req, res, next) {
   next();
 });
 
-app.use("/api/users", user);
+app.use("/api/users/", user);
 app.use("/api/group/", group);
 
 const PORT = process.env.PORT || 3000;
