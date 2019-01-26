@@ -4,9 +4,6 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
-const users = require("./routes/api/users");
-const posts = require("./routes/api/posts");
-const profile = require("./routes/api/profile");
 const passport = require("passport");
 const https = require("https");
 const user = require("./routes/api/user");
@@ -22,7 +19,7 @@ app.use(function(req, res, next) {
   next();
 });
 
-app.use("/api/users", users);
+app.use("/api/users", user);
 app.use("/api/group/", group);
 
 const PORT = process.env.PORT || 3000;
