@@ -31,3 +31,5 @@ router.post("/:group_name/add_user", (req, res) => {
 router.delete("/:group_name/users", (req, res) => {
   res.json();
 });
+
+module.exports = router;

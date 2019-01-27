@@ -14,17 +14,21 @@ const app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-app.use(function(req, res, next) {
-  console.log("HTTPS Response", res.statusCode);
-  next();
-});
+const db = require("./config/keys").mongoURI;
+mongoose
+  .connect(
+    db,
+    { useNewUrlParser: true }
+  )
+  .then(() => console.log("MongoDB connected"))
+  .catch(err => console.log(err));
 
-app.use("/api/users/", user);
-app.use("/api/group/", group);
+app.use("/api/users", user);
+app.use("/api/group", group);
 
 const PORT = process.env.PORT || 3000;
-
-https.createServer(app).listen(PORT, function(err) {
+app.listen(PORT, () => console.log("Server running"));
+/* https.createServer(app).listen(PORT, function(err) {
   if (err) console.log(err);
   else console.log("HTTPS server on http://localhost:%s", PORT);
-});
+}); */
