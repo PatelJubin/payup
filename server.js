@@ -8,8 +8,11 @@ const passport = require("passport");
 const https = require("https");
 const user = require("./routes/api/user");
 const group = require("./routes/api/group");
-
+const cookieParser = require("cookie-parser");
+const keys = require("./config/keys");
 const app = express();
+
+app.use(cookieParser(keys.secretOrKey));
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());

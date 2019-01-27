@@ -4,12 +4,43 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const passport = require("passport");
 const User = require("../../models/User");
+const keys = require("../../config/keys");
 
 //@route    POST api/users/login
 //@desc     login users and return JWT
 //@access   Public
 router.post("/login", (req, res) => {
-  res.json();
+  const email = req.body.email;
+  const password = req.body.password;
+
+  User.findOne({ email: email }).then(user => {
+    if (!user) {
+      return res.status(404).json("user not found");
+    }
+
+    //if user is found check password
+    bcrypt.compare(password, user.password).then(isAMatch => {
+      if (isAMatch) {
+        //user password correct
+        const payload = { id: user.id, name: user.name, email: user.email };
+        const cookieFlags = { httpOnly: true, secure: true, sameSite: "lax" };
+
+        //sign jwt with our secret and set cookie flags and return jwt
+        jwt.sign(
+          payload,
+          keys.secretOrKey,
+          { expiresIn: 19400 },
+          (err, token) => {
+            if (err) return res.status(500).json(err);
+            res.cookie("jwt", token, cookieFlags);
+            return res.json({ success: true, jwt: token });
+          }
+        );
+      } else {
+        return res.status(400).json("Password incorrect");
+      }
+    });
+  });
 });
 
 //@route    POST api/users/register
