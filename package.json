@@ -27,6 +27,7 @@
     "validator": "^10.10.0"
   },
   "devDependencies": {
+    "hoek": "^6.1.2",
     "nodemon": "^1.18.9"
   }
 }
