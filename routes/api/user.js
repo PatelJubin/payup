@@ -23,7 +23,7 @@ router.post("/login", (req, res) => {
       if (isAMatch) {
         //user password correct
         const payload = { id: user.id, name: user.name, email: user.email };
-        const cookieFlags = { httpOnly: true, secure: true, sameSite: "lax" };
+        const cookieFlags = { httpOnly: true, secure: false, sameSite: "lax" };
 
         //sign jwt with our secret and set cookie flags and return jwt
         jwt.sign(
@@ -33,7 +33,7 @@ router.post("/login", (req, res) => {
           (err, token) => {
             if (err) return res.status(500).json(err);
             res.cookie("jwt", token, cookieFlags);
-            return res.json({ success: true, jwt: token });
+            res.json({ success: true, token: token });
           }
         );
       } else {
@@ -78,8 +78,21 @@ router.post("/register", (req, res) => {
 //@route    GET api/users/:email
 //@desc     Get list of user emails / might be used for dropdowns
 //@access   Private
-router.get("/:email", (req, res) => {
-  res.json();
+router.get("/email", (req, res) => {
+  res.json("email");
 });
+
+router.get(
+  "/current",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    res.json({
+      id: req.user.id,
+      email: req.user.email,
+      name: req.user.name,
+      lol: "what in the fuk"
+    });
+  }
+);
 
 module.exports = router;
