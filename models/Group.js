@@ -6,7 +6,7 @@ const GroupSchema = new Schema({
     type: String,
     required: true
   },
-  user: [
+  users: [
     {
       type: Schema.Types.ObjectId,
       ref: "users"
@@ -24,7 +24,7 @@ const GroupSchema = new Schema({
       PaidFor: [
         {
           users: {
-            users: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId,
             ref: "users"
           },
           AmountToPayBack: {
@@ -40,4 +40,4 @@ const GroupSchema = new Schema({
   }
 });
 
-module.exports = Group = mongoose.model("groups", UserSchema);
+module.exports = Group = mongoose.model("groups", GroupSchema);

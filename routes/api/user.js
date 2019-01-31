@@ -78,9 +78,18 @@ router.post("/register", (req, res) => {
 //@route    GET api/users/:email
 //@desc     Get list of user emails / might be used for dropdowns
 //@access   Private
-router.get("/email", (req, res) => {
-  res.json("email");
-});
+router.get(
+  "/:email",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    User.findOne({ email: req.params.email })
+      .then(user => {
+        if (!user) return res.status(404).json("email not found");
+        res.json({ email: user.email, name: user.name });
+      })
+      .catch(err => console.log(err));
+  }
+);
 
 router.get(
   "/current",
@@ -89,8 +98,7 @@ router.get(
     res.json({
       id: req.user.id,
       email: req.user.email,
-      name: req.user.name,
-      lol: "what in the fuk"
+      name: req.user.name
     });
   }
 );
