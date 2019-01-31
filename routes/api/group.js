@@ -98,7 +98,6 @@ router.delete("/:group_name/users", (req, res) => {
   const userToDelete = req.body.email;
   Group.findOne({ groupname: groupname }).then(group => {
     User.findOne({ email: userToDelete }).then(user => {
-      console.log(group.users);
       const removeIndex = group.users.map(item => item.id).indexOf(user.id);
       group.users.splice(removeIndex, 1);
       group
