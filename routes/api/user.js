@@ -5,17 +5,25 @@ const jwt = require("jsonwebtoken");
 const passport = require("passport");
 const User = require("../../models/User");
 const keys = require("../../config/keys");
+const validateRegisterInput = require("../../validation/register");
+const validateLoginInput = require("../../validation/login");
 
 //@route    POST api/users/login
 //@desc     login users and return JWT
 //@access   Public
 router.post("/login", (req, res) => {
+  const { errors, isValid } = validateLoginInput(req.body);
+  if (!isValid) {
+    return res.status(400).json(errors);
+  }
+
   const email = req.body.email;
   const password = req.body.password;
 
   User.findOne({ email: email }).then(user => {
     if (!user) {
-      return res.status(404).json("user not found");
+      errors.email = "User not found";
+      return res.status(404).json(errors);
     }
 
     //if user is found check password
@@ -37,7 +45,8 @@ router.post("/login", (req, res) => {
           }
         );
       } else {
-        return res.status(400).json("Password incorrect");
+        errors.password = "Password Incorrect";
+        return res.status(400).json(errors);
       }
     });
   });
@@ -47,10 +56,15 @@ router.post("/login", (req, res) => {
 //@desc     Register users
 //@access   Public
 router.post("/register", (req, res) => {
+  const { errors, isValid } = validateRegisterInput(req.body);
+  if (!isValid) {
+    return res.status(400).json(errors);
+  }
   User.findOne({ email: req.body.email })
     .then(user => {
       if (user) {
-        return res.status(400).json("email exists");
+        errors.email = "Email already exists";
+        return res.status(400).json(errors);
       }
 
       const newUser = new User({
@@ -82,9 +96,13 @@ router.get(
   "/:email",
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
+    const errors = {};
     User.findOne({ email: req.params.email })
       .then(user => {
-        if (!user) return res.status(404).json("email not found");
+        if (!user) {
+          errors.email = "Email doesn't exist";
+          return res.status(404).json(errors);
+        }
         res.json({ email: user.email, name: user.name });
       })
       .catch(err => console.log(err));

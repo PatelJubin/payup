@@ -3,6 +3,8 @@ const router = express.Router();
 const passport = require("passport");
 const Group = require("../../models/Group");
 const User = require("../../models/User");
+
+const validateGroupInput = require("../../validation/group");
 //@route    GET api/group/:group_name/users
 //@desc     Return list of users in given group name / prob used for dropdowns
 //@access   Private
@@ -29,16 +31,26 @@ router.post(
   "/create",
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
+    const { errors, isValid } = validateGroupInput(req.body);
+    if (!isValid) {
+      return res.status(400).json(errors);
+    }
     const group = {};
     group.groupname = req.body.groupname;
-    var emails = {};
+    //convert req.body.emails from object to string to do replace and split operations
+    //replace and split operations seems to work on an object with 1 email
+    //implement the line below if you get var.replace or var.split is not a function
+    var emails = req.body.emails.toString();
     if (typeof req.body.emails !== "undefined") {
-      emails = req.body.emails.replace(/\s/g, "").split(",");
+      emails = emails.replace(/\s/g, "").split(",");
       emails.push(req.user.email);
     }
     Group.findOne({ groupname: group.groupname })
       .then(newGroup => {
-        if (newGroup) return res.status(400).json("Group already exists");
+        if (newGroup) {
+          errors.groupname = "Group name is taken";
+          return res.status(400).json(errors);
+        }
         User.find({ email: [...emails] }, { id: 1, name: 1, email: 1 }).then(
           users => {
             group.users = users;
