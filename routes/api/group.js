@@ -94,7 +94,19 @@ router.post("/:group_name/add_user", (req, res) => {
 //@desc     Delete user from specificed group
 //@access   Private
 router.delete("/:group_name/users", (req, res) => {
-  res.json();
+  const groupname = req.params.group_name;
+  const userToDelete = req.body.email;
+  Group.findOne({ groupname: groupname }).then(group => {
+    User.findOne({ email: userToDelete }).then(user => {
+      console.log(group.users);
+      const removeIndex = group.users.map(item => item.id).indexOf(user.id);
+      group.users.splice(removeIndex, 1);
+      group
+        .save()
+        .then(group => res.json(group))
+        .catch(err => res.status(404).json(err));
+    });
+  });
 });
 
 module.exports = router;
