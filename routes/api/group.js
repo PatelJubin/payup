@@ -56,56 +56,64 @@ router.post(
 //@route    POST api/group/:group_name/add_users
 //@desc     Add user to specificed group
 //@access   Private
-router.post("/:group_name/add_user", (req, res) => {
-  const groupname = req.params.group_name;
-  //remove whitespace and split at comma
-  const emails = req.body.emails.replace(/\s/g, "").split(",");
-  User.find({ email: [...emails] }, { id: 1, name: 1, email: 1 }).then(
-    usersToAdd => {
-      if (!usersToAdd) res.status(404).json("Users not found");
-      Group.findOne({ groupname: groupname }).then(group => {
-        if (!group) return res.status(404).json("Group doesn't exist");
-        User.find({ _id: [...group.users] }, { email: 1, _id: 0 }).then(
-          users => {
-            var allEmails = [];
-            //get emails from objects and compare to the emails provided from
-            // req.body.emails and if match found raise error
-            users.forEach(addEmail => allEmails.push(addEmail.email));
-            var Repeats = allEmails.some(dup => emails.indexOf(dup) >= 0);
-            if (Repeats)
-              return res.status(400).json("Duplicate emails provided");
-            //if no duplicates found go ahead and add users to group
-            Group.updateOne(
-              { groupname: groupname },
-              { $push: { users: { $each: usersToAdd } } }
-            )
-              .then(() => {
-                res.json({ successfullyUpdated: true });
-              })
-              .catch(err => console.log(err));
-          }
-        );
-      });
-    }
-  );
-});
+router.post(
+  "/:group_name/add_user",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    const groupname = req.params.group_name;
+    //remove whitespace and split at comma
+    const emails = req.body.emails.replace(/\s/g, "").split(",");
+    User.find({ email: [...emails] }, { id: 1, name: 1, email: 1 }).then(
+      usersToAdd => {
+        if (!usersToAdd) res.status(404).json("Users not found");
+        Group.findOne({ groupname: groupname }).then(group => {
+          if (!group) return res.status(404).json("Group doesn't exist");
+          User.find({ _id: [...group.users] }, { email: 1, _id: 0 }).then(
+            users => {
+              var allEmails = [];
+              //get emails from objects and compare to the emails provided from
+              // req.body.emails and if match found raise error
+              users.forEach(addEmail => allEmails.push(addEmail.email));
+              var Repeats = allEmails.some(dup => emails.indexOf(dup) >= 0);
+              if (Repeats)
+                return res.status(400).json("Duplicate emails provided");
+              //if no duplicates found go ahead and add users to group
+              Group.updateOne(
+                { groupname: groupname },
+                { $push: { users: { $each: usersToAdd } } }
+              )
+                .then(() => {
+                  res.json({ successfullyUpdated: true });
+                })
+                .catch(err => console.log(err));
+            }
+          );
+        });
+      }
+    );
+  }
+);
 
 //@route    DELETE api/group/:group_name/users
 //@desc     Delete user from specificed group
 //@access   Private
-router.delete("/:group_name/users", (req, res) => {
-  const groupname = req.params.group_name;
-  const userToDelete = req.body.email;
-  Group.findOne({ groupname: groupname }).then(group => {
-    User.findOne({ email: userToDelete }).then(user => {
-      const removeIndex = group.users.map(item => item.id).indexOf(user.id);
-      group.users.splice(removeIndex, 1);
-      group
-        .save()
-        .then(group => res.json(group))
-        .catch(err => res.status(404).json(err));
+router.delete(
+  "/:group_name/users",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    const groupname = req.params.group_name;
+    const userToDelete = req.body.email;
+    Group.findOne({ groupname: groupname }).then(group => {
+      User.findOne({ email: userToDelete }).then(user => {
+        const removeIndex = group.users.map(item => item.id).indexOf(user.id);
+        group.users.splice(removeIndex, 1);
+        group
+          .save()
+          .then(group => res.json(group))
+          .catch(err => res.status(404).json(err));
+      });
     });
-  });
-});
+  }
+);
 
 module.exports = router;
