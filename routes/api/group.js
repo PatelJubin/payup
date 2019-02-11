@@ -3,8 +3,11 @@ const router = express.Router();
 const passport = require("passport");
 const Group = require("../../models/Group");
 const User = require("../../models/User");
+const mongoose = require("mongoose");
+mongoose.set("useFindAndModify", false);
 
 const validateGroupInput = require("../../validation/group");
+
 //@route    GET api/group/:group_name/users
 //@desc     Return list of users in given group name / prob used for dropdowns
 //@access   Private
@@ -18,6 +21,51 @@ router.get(
       User.find({ _id: [...group.users] }, { name: 1, email: 1, _id: 0 }).then(
         users => {
           res.json(users);
+        }
+      );
+    });
+  }
+);
+
+//@route    POST api/group/:group_name/payee
+//@desc     Store the history of a transaction and who paid for it
+//@access   Private
+router.post(
+  "/:group_name/transaction",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    const groupname = req.params.group_name;
+    const payeeEmail = req.body.payeeEmail;
+    var paidForEmails = req.body.paidForEmails.toString();
+    const amtPaid = req.body.amtPaid;
+    const moneyOwedField = {};
+    //add a function call here to update users moneyowedtome and moneyowedtoothers fields
+    if (typeof paidForEmails !== "undefined") {
+      paidForEmails = paidForEmails.replace(/\s/g, "").split(",");
+    }
+    const amtToPayBack = amtPaid / (paidForEmails.length + 1);
+    moneyOwedField.AmountPaid = amtPaid;
+
+    Group.findOne({ groupname: groupname }).then(group => {
+      if (!group) res.status(404).json("group doesn't exist");
+      User.findOne({ email: payeeEmail }, { id: 1, name: 1, email: 1 }).then(
+        payeeUser => {
+          if (!payeeUser) return res.status(404).json("User not found");
+          User.find(
+            { email: [...paidForEmails] },
+            { id: 1, name: 1, email: 1 }
+          ).then(paidForUsers => {
+            moneyOwedField.payee = payeeUser;
+
+            moneyOwedField.PaidFor = paidForUsers;
+            moneyOwedField.AmountToPayBack = amtToPayBack;
+
+            Group.updateOne(
+              { groupname: groupname },
+              { $push: { moneyOwed: moneyOwedField } },
+              { new: true }
+            ).then(() => res.json({ tranactionAddedSuccessfully: true }));
+          });
         }
       );
     });
@@ -103,6 +151,30 @@ router.post(
         });
       }
     );
+  }
+);
+
+//@route    DELETE api/group/:group_name/:transaction_id/:user_id/paid
+//@desc     Delete user from moneyOwed field if they paid back
+//@access   Private
+router.delete(
+  "/:group_name/:transaction_id/:user_id/paid",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    const transaction_id = req.params.transaction_id;
+    const groupname = req.params.group_name;
+    const user_id = req.params.user_id;
+    Group.findOne({ groupname: groupname }, { moneyOwed: 1 }).then(group => {
+      if (!group) return res.status(404).json("group not found");
+      const transactionIndex = group.moneyOwed
+        .map(item => item.id)
+        .indexOf(transaction_id);
+      const userIndex = group.moneyOwed[transactionIndex].PaidFor.indexOf(
+        user_id
+      );
+      group.moneyOwed[transactionIndex].PaidFor.splice(userIndex, 1);
+      group.save().then(group => res.json(group));
+    });
   }
 );
 

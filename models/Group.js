@@ -21,15 +21,13 @@ const GroupSchema = new Schema({
       AmountPaid: {
         type: Number
       },
+      AmountToPayBack: {
+        type: Number
+      },
       PaidFor: [
         {
-          users: {
-            type: Schema.Types.ObjectId,
-            ref: "users"
-          },
-          AmountToPayBack: {
-            type: Number
-          }
+          type: Schema.Types.ObjectId,
+          ref: "users"
         }
       ]
     }
