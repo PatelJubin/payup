@@ -8,6 +8,28 @@ mongoose.set("useFindAndModify", false);
 
 const validateGroupInput = require("../../validation/group");
 
+var incrementUserTotals = (payee, paidfor, paybackAmt) => {
+  User.updateOne(
+    { email: payee },
+    { $inc: { MoneyOwedToMe: paybackAmt * paidfor.length } }
+  ).then(() => {});
+  User.updateMany(
+    { email: [...paidfor] },
+    { $inc: { MoneyOwedToOthers: paybackAmt } }
+  ).then(() => {});
+};
+
+var decrementUserTotals = (payeeUser, paidbackUser, paidAmt) => {
+  paidAmt = -paidAmt;
+  User.updateOne({ _id: payeeUser }, { $inc: { MoneyOwedToMe: paidAmt } }).then(
+    () => {}
+  );
+  User.updateOne(
+    { _id: paidbackUser },
+    { $inc: { MoneyOwedToOthers: paidAmt } }
+  ).then(() => {});
+};
+
 //@route    GET api/group/:group_name/users
 //@desc     Return list of users in given group name / prob used for dropdowns
 //@access   Private
@@ -39,11 +61,11 @@ router.post(
     var paidForEmails = req.body.paidForEmails.toString();
     const amtPaid = req.body.amtPaid;
     const moneyOwedField = {};
-    //add a function call here to update users moneyowedtome and moneyowedtoothers fields
     if (typeof paidForEmails !== "undefined") {
       paidForEmails = paidForEmails.replace(/\s/g, "").split(",");
     }
     const amtToPayBack = amtPaid / (paidForEmails.length + 1);
+    incrementUserTotals(payeeEmail, paidForEmails, amtToPayBack); //add a function call here to update users moneyowedtome and moneyowedtoothers fields
     moneyOwedField.AmountPaid = amtPaid;
 
     Group.findOne({ groupname: groupname }).then(group => {
@@ -172,6 +194,9 @@ router.delete(
       const userIndex = group.moneyOwed[transactionIndex].PaidFor.indexOf(
         user_id
       );
+      const payeeID = group.moneyOwed[transactionIndex].payee;
+      const paidAmt = group.moneyOwed[transactionIndex].AmountToPayBack;
+      decrementUserTotals(payeeID, user_id, paidAmt);
       group.moneyOwed[transactionIndex].PaidFor.splice(userIndex, 1);
       group.save().then(group => res.json(group));
     });
