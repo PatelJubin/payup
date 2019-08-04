@@ -23,7 +23,8 @@ const UserSchema = new Schema({
   },
   MoneyOwedToOthers: {
     type: Number
-  }
+  },
+  groupsID: [{ type: Schema.Types.ObjectId, ref: "groups" }]
 });
 
 module.exports = User = mongoose.model("users", UserSchema);

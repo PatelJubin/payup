@@ -4,6 +4,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const passport = require("passport");
 const User = require("../../models/User");
+const Group = require("../../models/Group");
 const keys = require("../../config/keys");
 const validateRegisterInput = require("../../validation/register");
 const validateLoginInput = require("../../validation/login");
@@ -89,11 +90,39 @@ router.post("/register", (req, res) => {
     .catch(err => res.json(err));
 });
 
+//@route    GET api/users/current
+//@desc     Get the current logged in user's information
+//@access   Private
+router.get(
+  "/current",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    const loggedUser = {
+      id: req.user._id,
+      email: req.user.email,
+      MoneyOwedToMe: req.user.MoneyOwedToMe,
+      MoneyOwedToOthers: req.user.MoneyOwedToOthers
+    };
+    res.json(loggedUser);
+  }
+);
+
+router.get(
+  "/current/groups",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    const mygroups = req.user.groupsID;
+    Group.find({ _id: [...mygroups] }).then(groups => {
+      res.json(groups);
+    });
+  }
+);
+
 //@route    GET api/users/:email
 //@desc     Get list of user emails / might be used for dropdowns
 //@access   Private
 router.get(
-  "/:email",
+  "/email/:email",
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
     const errors = {};
@@ -106,18 +135,6 @@ router.get(
         res.json({ email: user.email, name: user.name });
       })
       .catch(err => console.log(err));
-  }
-);
-
-router.get(
-  "/current",
-  passport.authenticate("jwt", { session: false }),
-  (req, res) => {
-    res.json({
-      id: req.user.id,
-      email: req.user.email,
-      name: req.user.name
-    });
   }
 );
 

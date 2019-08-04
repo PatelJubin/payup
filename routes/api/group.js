@@ -124,9 +124,20 @@ router.post(
         User.find({ email: [...emails] }, { id: 1, name: 1, email: 1 }).then(
           users => {
             group.users = users;
-            new Group(group)
+
+            newg = new Group(group)
               .save()
-              .then(group => res.json(group))
+              .then(
+                group =>
+                  User.updateMany(
+                    { _id: [...users] },
+                    { $push: { groupsID: group._id } },
+                    { upsert: true }
+                  )
+                    .then(() => console.log({ groupIDAddedToUser: true }))
+                    .catch(err => console.log(err)),
+                res.json(group)
+              )
               .catch(err => console.log(err));
           }
         );
@@ -135,7 +146,7 @@ router.post(
   }
 );
 
-//@route    POST api/group/:group_name/add_users
+//@route    POST api/group/:group_name/add_user
 //@desc     Add user to specificed group
 //@access   Private
 router.post(
@@ -150,26 +161,30 @@ router.post(
         if (!usersToAdd) res.status(404).json("Users not found");
         Group.findOne({ groupname: groupname }).then(group => {
           if (!group) return res.status(404).json("Group doesn't exist");
-          User.find({ _id: [...group.users] }, { email: 1, _id: 0 }).then(
-            users => {
-              var allEmails = [];
-              //get emails from objects and compare to the emails provided from
-              // req.body.emails and if match found raise error
-              users.forEach(addEmail => allEmails.push(addEmail.email));
-              var Repeats = allEmails.some(dup => emails.indexOf(dup) >= 0);
-              if (Repeats)
-                return res.status(400).json("Duplicate emails provided");
-              //if no duplicates found go ahead and add users to group
-              Group.updateOne(
-                { groupname: groupname },
-                { $push: { users: { $each: usersToAdd } } }
-              )
-                .then(() => {
-                  res.json({ successfullyUpdated: true });
-                })
-                .catch(err => console.log(err));
-            }
-          );
+          User.find({ _id: [...group.users] }, { email: 1 }).then(users => {
+            var allEmails = [];
+            //get emails from objects and compare to the emails provided from
+            // req.body.emails and if match found raise error
+            users.forEach(addEmail => allEmails.push(addEmail.email));
+            var Repeats = allEmails.some(dup => emails.indexOf(dup) >= 0);
+            if (Repeats)
+              return res.status(400).json("Duplicate emails provided");
+            //if no duplicates found go ahead and add users to group
+            Group.updateOne(
+              { groupname: groupname },
+              { $push: { users: { $each: usersToAdd } } }
+            )
+              .then()
+              .catch(err => console.log(err));
+
+            User.updateMany(
+              { _id: [...usersToAdd] },
+              { $push: { groupsID: group._id } },
+              { upsert: true }
+            )
+              .then(() => res.json({ GroupUpdated: true }))
+              .catch(err => console.log(err));
+          });
         });
       }
     );

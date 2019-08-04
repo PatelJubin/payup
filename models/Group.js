@@ -8,15 +8,35 @@ const GroupSchema = new Schema({
   },
   users: [
     {
-      type: Schema.Types.ObjectId,
-      ref: "users"
+      email: {
+        type: String,
+        required: true
+      },
+      name: {
+        type: String,
+        required: true
+      },
+      id: {
+        type: Schema.Types.ObjectId,
+        ref: "users"
+      }
     }
   ],
   moneyOwed: [
     {
       payee: {
-        type: Schema.Types.ObjectId,
-        ref: "users"
+        email: {
+          type: String,
+          required: true
+        },
+        name: {
+          type: String,
+          required: true
+        },
+        id: {
+          type: Schema.Types.ObjectId,
+          ref: "users"
+        }
       },
       AmountPaid: {
         type: Number
@@ -26,8 +46,18 @@ const GroupSchema = new Schema({
       },
       PaidFor: [
         {
-          type: Schema.Types.ObjectId,
-          ref: "users"
+          email: {
+            type: String,
+            required: true
+          },
+          name: {
+            type: String,
+            required: true
+          },
+          id: {
+            type: Schema.Types.ObjectId,
+            ref: "users"
+          }
         }
       ]
     }
